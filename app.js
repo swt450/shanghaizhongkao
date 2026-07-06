@@ -7,40 +7,45 @@ const PAGE_GROUPS = {
     { key: "parallel", label: "平行志愿" },
   ],
   choice: [
-    { key: "compare", label: "分数对比" },
-    { key: "parallelHistory", label: "平行历年" },
-    { key: "advice", label: "报校建议" },
+    { key: "compare", label: "名额分配" },
+    { key: "parallelHistory", label: "平行志愿" },
+    { key: "advice", label: "择校建议" },
   ],
+};
+
+const SECTION_TITLES = {
+  history: "历年录取最低分数查询",
+  choice: "高中学校选择建议",
 };
 
 const PAGE_META = {
   quotaDistrict: {
     title: "名额到区",
-    intro: "按所在区查看名额到区历年录取线，英语分数已单独列出，方便同分排序参考。",
+    intro: "按所在区查看名额到区历年录取最低分数线，英语分数已单独列出，方便同分排序参考。",
   },
   quotaSchool: {
     title: "名额到校",
-    intro: "名额到校和初中强相关。可以先选所在初中，再看对应高中的历年分数。",
+    intro: "名额到校和初中强相关。可以先选所在初中，再看对应高中的历年录取最低分数线。",
   },
   parallel: {
     title: "平行志愿",
-    intro: "按所在区查看平行志愿分数线，适合快速定位同区可报学校和同分参考。",
+    intro: "按所在区查看平行志愿录取最低分数线，适合快速定位同区可报学校和同分参考。",
   },
   compare: {
-    title: "分数对比",
-    intro: "把同一所高中近三年的名额到区、名额到校、平行志愿放在一起，先判断名额路径有没有机会。",
+    title: "各渠道录取最低分数线对比",
+    intro: "把同一所高中近三年的名额到区、名额到校、平行志愿录取最低分数线放在一起，先判断名额路径有没有机会。",
   },
   parallelHistory: {
-    title: "平行志愿历年分数",
-    intro: "如果名额路径优势不明显，再看平行志愿近三年走势，判断冲稳保梯度。",
+    title: "1-15平行志愿录取最低分数线对比",
+    intro: "如果名额路径优势不明显，再看1-15平行志愿近三年录取最低分数线走势，判断冲稳保梯度。",
   },
   advice: {
-    title: "报学校建议",
-    intro: "输入预估分后，先看名额机会，再把平行志愿分成冲、稳、保。建议只做参考，最终还要看通勤和孩子意愿。",
+    title: "择校建议",
+    intro: "按所选区的名额到区录取最低分数线，结合预估分给出不同分数段的冲、稳、保参考。",
   },
 };
 
-const SCHOOL_TYPE_ORDER = ["委属高中", "市重点", "区重点", "普通高中", "民办高中", "国际/双语", "其他"];
+const SCHOOL_TYPE_ORDER = ["委属高中", "市重点", "区重点", "普通高中", "民办高中", "国际高中", "国际/双语", "其他"];
 const ASCENDING_YEARS = [...data.summary.years].sort();
 
 const state = {
@@ -71,6 +76,7 @@ const els = {
   yearField: document.querySelector("#yearSelect").closest("label"),
   score: document.querySelector("#scoreInput"),
   scoreField: document.querySelector("#scoreInput").closest("label"),
+  scoreLabel: document.querySelector("#scoreInput").closest("label").querySelector("span"),
   juniorField: document.querySelector("#juniorField"),
   junior: document.querySelector("#juniorInput"),
   juniorOptions: document.querySelector("#juniorOptions"),
@@ -168,9 +174,10 @@ function openHome() {
   els.shell.classList.remove("is-hidden");
   els.homeView.classList.add("is-active");
   els.workView.classList.remove("is-active");
-  els.selectedDistrict.textContent = state.district;
-  els.headerEyebrow.textContent = "上海中考志愿";
-  els.headerTitle.textContent = "选择入口";
+  if (els.selectedDistrict) els.selectedDistrict.textContent = state.district;
+  els.headerEyebrow.textContent = "考生所在区";
+  els.headerTitle.textContent = state.district;
+  els.headerTitle.classList.add("district-title");
 }
 
 function openSection(section) {
@@ -179,6 +186,7 @@ function openSection(section) {
   resetFilters();
   els.homeView.classList.remove("is-active");
   els.workView.classList.add("is-active");
+  els.headerTitle.classList.remove("district-title");
   els.headerEyebrow.textContent = state.district;
   renderTabs();
   renderPage();
@@ -228,11 +236,14 @@ function renderPage() {
   populateJuniorSchools();
   els.junior.value = state.juniorSchool;
   const meta = PAGE_META[state.page];
-  els.headerTitle.textContent = meta.title;
-  els.pageIntro.textContent = meta.intro;
+  els.headerTitle.textContent = SECTION_TITLES[state.section] || meta.title;
+  els.pageIntro.textContent = "";
+  els.pageIntro.classList.add("is-hidden");
   els.listTitle.textContent = meta.title;
-  els.yearField.classList.toggle("is-hidden", state.page === "parallelHistory");
-  els.scoreField.classList.toggle("is-hidden", state.page === "parallelHistory");
+  els.yearField.classList.toggle("is-hidden", ["compare", "parallelHistory"].includes(state.page));
+  els.scoreField.classList.toggle("is-hidden", ["compare", "parallelHistory"].includes(state.page));
+  els.scoreLabel.textContent = state.page === "advice" ? "预估分" : "最低分";
+  els.score.placeholder = state.page === "advice" ? "输入分数" : "不限";
   els.juniorField.classList.toggle("is-hidden", !["quotaSchool", "compare", "advice"].includes(state.page));
 
   if (state.page === "quotaDistrict") renderPathList("quotaDistrict");
@@ -272,10 +283,18 @@ function scoreTable(path, rows, title) {
       </div>
       <div class="score-table-wrap">
         <table class="score-table ${isQuotaSchool ? "is-quota-school" : ""}">
+          <colgroup>
+            <col class="school-column" />
+            <col class="total-column" />
+            <col class="core-column" />
+            <col class="subject-column" />
+            <col class="subject-column" />
+            <col class="subject-column" />
+            <col class="test-column" />
+          </colgroup>
           <thead>
             <tr>
               <th>学校</th>
-              ${isQuotaSchool ? "<th>初中</th>" : ""}
               <th>总分</th>
               <th>语数外</th>
               <th>语文</th>
@@ -294,8 +313,10 @@ function scoreTable(path, rows, title) {
 function scoreTableRow(row, isQuotaSchool) {
   return `
     <tr>
-      <td class="school-col">${escapeHtml(row.school)}</td>
-      ${isQuotaSchool ? `<td class="junior-col">${escapeHtml(row.juniorSchool || "-")}</td>` : ""}
+      <td class="school-col">
+        <strong>${escapeHtml(row.school)}</strong>
+        ${isQuotaSchool ? `<span class="junior-under">${escapeHtml(row.juniorSchool || "-")}</span>` : ""}
+      </td>
       <td class="total-col">${fmt(row.score)}</td>
       <td class="small-score">${fmt(row.core)}</td>
       <td class="small-score">${fmt(row.chinese)}</td>
@@ -334,8 +355,7 @@ function buildCompareRows() {
       const years = {};
       for (const year of data.summary.years) {
         const quota = findScore("quotaDistrict", school, year);
-        // 平行分始终取当前所在区的平行志愿线，包括外区高中。
-        const parallel = findScore("parallel", school, year);
+        const parallel = findScore("parallel", school, year, compareParallelDistrict(meta));
         const schoolQuota = findSchoolQuota(school, year);
         years[year] = {
           quota,
@@ -358,7 +378,6 @@ function buildCompareRows() {
       };
     })
     .filter((item) => item.category)
-    .filter((item) => !state.minScore || item.sortScore >= Number(state.minScore))
     .sort((a, b) => b.sortScore - a.sortScore || a.school.localeCompare(b.school, "zh-Hans-CN"));
 }
 
@@ -366,6 +385,10 @@ function compareCategory(meta) {
   if (meta.schoolType === "委属高中") return "委属高中";
   if (meta.schoolType !== "市重点") return "";
   return meta.schoolDistrict === state.district || !meta.schoolDistrict ? "本区市重点" : "外区市重点";
+}
+
+function compareParallelDistrict(meta) {
+  return meta.schoolDistrict && meta.schoolDistrict !== state.district ? meta.schoolDistrict : state.district;
 }
 
 function groupCompareRows(rows) {
@@ -384,6 +407,13 @@ function compareGroupTable(group) {
       </div>
       <div class="compare-table-wrap">
         <table class="compare-table">
+          <colgroup>
+            <col class="school-column" />
+            <col class="year-column" />
+            <col class="score-column" />
+            <col class="score-column" />
+            <col class="parallel-column" />
+          </colgroup>
           <thead>
             <tr>
               <th>学校</th>
@@ -521,7 +551,7 @@ function compareJudgement(item) {
     level: "care",
     label: "回看平行",
     title: "名额优势不明显",
-    text: "目前没有看到到区低于平行的明确优势，建议重点回到平行志愿历年分数排序。",
+    text: "目前没有看到到区低于平行的明确优势，建议重点回到平行志愿录取最低分数线排序。",
   };
 }
 
@@ -558,11 +588,16 @@ function parallelHistoryTable(rows, title) {
       </div>
       <div class="history-table-wrap">
         <table class="history-table">
+          <colgroup>
+            <col class="school-column" />
+            <col class="year-score-column" />
+            <col class="year-score-column" />
+            <col class="year-score-column" />
+          </colgroup>
           <thead>
             <tr>
               <th>学校</th>
               ${ASCENDING_YEARS.map((year) => `<th>${year}</th>`).join("")}
-              <th>趋势</th>
             </tr>
           </thead>
           <tbody>${rows.map(parallelHistoryRow).join("")}</tbody>
@@ -573,13 +608,10 @@ function parallelHistoryTable(rows, title) {
 }
 
 function parallelHistoryRow(item) {
-  const values = ASCENDING_YEARS.map((year) => item.years[year]?.score).filter((value) => value !== undefined);
-  const trend = trendLabel(values);
   return `
     <tr>
       <td class="school-col">${escapeHtml(item.school)}</td>
       ${ASCENDING_YEARS.map((year) => `<td class="score-col">${fmt(item.years[year]?.score)}</td>`).join("")}
-      <td class="trend-col ${trend.level}">${trend.text}</td>
     </tr>
   `;
 }
@@ -605,62 +637,210 @@ function groupBySchoolType(rows) {
 
 function renderAdvice() {
   const target = scoreValue(state.minScore);
+  const districtRows = quotaDistrictAdviceRows();
+  const schoolRows = quotaSchoolAdviceRows();
+  const parallelRows = parallelAdviceRows();
   if (target === null) {
-    els.resultCount.textContent = "先填分数";
+    els.resultCount.textContent = `${districtRows.length + schoolRows.length + parallelRows.length} 所`;
     els.resultList.innerHTML = `
+      ${adviceOverview(districtRows)}
       <div class="empty">
-        在“最低分”里输入预估中考分数，这里会按名额机会和平行志愿给出冲、稳、保建议。
+        在“预估分”里输入分数，这里会按${escapeHtml(state.district)}名额到区、所在初中的名额到校和平行志愿录取线给出冲、稳、保建议。
       </div>
+      ${adviceSchoolPrompt(schoolRows)}
     `;
     return;
   }
 
-  const compareRows = buildCompareRows();
-  const quotaIdeas = compareRows
-    .filter((item) => {
-      const quota = item.latest.quota;
-      return quota !== null && quota >= target - 8 && quota <= target + 18;
-    })
-    .slice(0, 8);
-  const parallelRows = data.parallel
-    .filter((row) => row.district === state.district && row.year === "2025" && (!state.query || row.school.includes(state.query.trim())))
-    .sort((a, b) => b.score - a.score);
+  const districtBuckets = adviceBuckets(districtRows, "到区线", target);
+  const schoolBuckets = adviceBuckets(schoolRows, "到校线", target);
+  const parallelBuckets = adviceBuckets(parallelRows, "平行线", target);
+  const districtCount = districtBuckets.reduce((sum, bucket) => sum + bucket.rows.length, 0);
+  const schoolCount = schoolBuckets.reduce((sum, bucket) => sum + bucket.rows.length, 0);
+  const parallelCount = parallelBuckets.reduce((sum, bucket) => sum + bucket.rows.length, 0);
 
-  const buckets = [
-    { title: "冲一冲", rows: parallelRows.filter((row) => row.score > target && row.score <= target + 12).slice(0, 8) },
-    { title: "稳一稳", rows: parallelRows.filter((row) => row.score <= target && row.score >= target - 10).slice(0, 8) },
-    { title: "保一保", rows: parallelRows.filter((row) => row.score < target - 10 && row.score >= target - 30).slice(0, 8) },
-  ];
-
-  els.resultCount.textContent = `${quotaIdeas.length + buckets.reduce((sum, bucket) => sum + bucket.rows.length, 0)} 条`;
+  els.resultCount.textContent = `${districtCount + schoolCount + parallelCount} 所`;
   els.resultList.innerHTML = `
-    ${adviceQuotaBlock(quotaIdeas, target)}
-    ${buckets.map((bucket) => adviceBucket(bucket, target)).join("")}
+    ${adviceSummary(districtRows, target)}
+    ${adviceGroup("名额到区建议", "按考生所在区名额到区录取最低分数线判断，全区竞争。", districtBuckets, target, "名额到区")}
+    ${adviceSchoolGroup(schoolRows, schoolBuckets, target)}
+    ${adviceGroup("平行志愿建议", "按考生所在区1-15平行志愿录取最低分数线判断，用来拉开冲、稳、保梯度。", parallelBuckets, target, "平行志愿")}
+    ${adviceOverview(districtRows)}
   `;
 }
 
-function adviceQuotaBlock(rows, target) {
+function quotaDistrictAdviceRows() {
+  return data.quotaDistrict
+    .filter((row) => row.district === state.district && row.year === state.year)
+    .filter((row) => row.score !== null)
+    .filter((row) => !state.query || row.school.includes(state.query.trim()))
+    .sort((a, b) => b.score - a.score || a.school.localeCompare(b.school, "zh-Hans-CN"));
+}
+
+function quotaSchoolAdviceRows() {
+  const junior = state.juniorSchool.trim();
+  if (!junior) return [];
+  return data.quotaSchool
+    .filter((row) => row.district === state.district && row.year === state.year)
+    .filter((row) => row.score !== null)
+    .filter((row) => String(row.juniorSchool || "").includes(junior))
+    .filter((row) => !state.query || row.school.includes(state.query.trim()))
+    .sort((a, b) => b.score - a.score || a.school.localeCompare(b.school, "zh-Hans-CN"));
+}
+
+function parallelAdviceRows() {
+  return data.parallel
+    .filter((row) => row.district === state.district && row.year === state.year)
+    .filter((row) => row.score !== null)
+    .filter((row) => !state.query || row.school.includes(state.query.trim()))
+    .sort((a, b) => b.score - a.score || a.school.localeCompare(b.school, "zh-Hans-CN"));
+}
+
+function adviceBuckets(rows, lineLabel, target) {
+  return [
+    { title: "冲一冲", note: `${lineLabel}高于预估分 0-12 分，适合少量放在前面试机会。`, rows: closestRows(rows.filter((row) => row.score > target && row.score <= target + 12), target) },
+    { title: "稳一稳", note: `${lineLabel}低于或接近预估分 0-10 分，适合作为主要关注层。`, rows: closestRows(rows.filter((row) => row.score <= target && row.score >= target - 10), target) },
+    { title: "保一保", note: `${lineLabel}低于预估分 10-30 分，用来补足安全梯度。`, rows: closestRows(rows.filter((row) => row.score < target - 10 && row.score >= target - 30), target) },
+  ];
+}
+
+function closestRows(rows, target) {
+  return rows
+    .slice()
+    .sort((a, b) => Math.abs(a.score - target) - Math.abs(b.score - target) || b.score - a.score || a.school.localeCompare(b.school, "zh-Hans-CN"))
+    .slice(0, 8);
+}
+
+function adviceSummary(rows, target) {
+  if (!rows.length) {
+    return '<div class="empty">当前区和年份暂无名额到区数据。</div>';
+  }
+  const reachable = rows.filter((row) => row.score <= target);
+  const nearest = rows.reduce((best, row) => {
+    if (!best) return row;
+    return Math.abs(row.score - target) < Math.abs(best.score - target) ? row : best;
+  }, null);
+  const topScore = rows[0].score;
+  const lowScore = rows[rows.length - 1].score;
+  let level = "低位";
+  let suggestion = "先稳住低于预估分的学校，冲刺学校数量要控制，避免名额到区占用过多不确定性。";
+  if (target >= topScore) {
+    level = "高位";
+    suggestion = "本区名额到区空间较大，可以优先看委属高中和本区、市重点高位学校，再保留少量稳妥梯度。";
+  } else if (reachable.length >= Math.ceil(rows.length * 0.6)) {
+    level = "中高位";
+    suggestion = "可选面比较宽，建议冲稳保都放，但重点比较学校热度和近三年波动。";
+  } else if (reachable.length >= Math.ceil(rows.length * 0.3)) {
+    level = "中位";
+    suggestion = "重点放在接近预估分和低 10 分以内的学校，冲刺学校控制在少数。";
+  } else if (target < lowScore) {
+    level = "低于当前到区线";
+    suggestion = "这个分数低于当前筛选结果中的名额到区线，建议回到平行志愿和名额到校一起看。";
+  }
   return `
     <section class="table-section advice-section">
       <div class="group-title">
-        <h3>先看名额机会</h3>
-        <span>${rows.length} 所</span>
+        <h3>${escapeHtml(state.district)}${fmt(state.year)} 到区判断</h3>
+        <span>${level}</span>
       </div>
       <div class="advice-list">
-        ${
-          rows.length
-            ? rows.map((item) => {
-                const gap = round1((item.latest.quota || 0) - target);
-                return `<article class="advice-row"><strong>${escapeHtml(item.school)}</strong><span>到区 ${fmt(item.latest.quota)}，比预估分 ${gap >= 0 ? "高" : "低"} ${fmt(Math.abs(gap))}</span></article>`;
-              }).join("")
-            : '<div class="empty inline">这个分数附近暂时没有明显名额到区线索，继续看平行志愿。</div>'
-        }
+        <article class="advice-row">
+          <strong>预估分 ${fmt(target)}</strong>
+          <span>当前筛选下共有 ${rows.length} 所，到区线不高于预估分的有 ${reachable.length} 所；最近的是 ${escapeHtml(nearest.school)}，到区线 ${fmt(nearest.score)}。</span>
+          <span>${suggestion}</span>
+        </article>
       </div>
     </section>
   `;
 }
 
-function adviceBucket(bucket, target) {
+function adviceOverview(rows) {
+  const bands = buildScoreBands(rows);
+  if (!bands.length) return "";
+  return `
+    <section class="table-section advice-section">
+      <div class="group-title">
+        <h3>本区分数段参考</h3>
+        <span>${bands.length} 段</span>
+      </div>
+      <div class="advice-list">
+        ${bands.map((band) => `<article class="advice-row"><strong>${band.title}</strong><span>${band.text}</span></article>`).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function buildScoreBands(rows) {
+  if (!rows.length) return [];
+  const bands = [
+    { title: "高分段", rows: rows.slice(0, Math.ceil(rows.length / 3)) },
+    { title: "中分段", rows: rows.slice(Math.ceil(rows.length / 3), Math.ceil((rows.length * 2) / 3)) },
+    { title: "稳妥段", rows: rows.slice(Math.ceil((rows.length * 2) / 3)) },
+  ].filter((band) => band.rows.length);
+
+  return bands.map((band) => {
+    const first = band.rows[0];
+    const last = band.rows[band.rows.length - 1];
+    const sample = band.rows.slice(0, 3).map((row) => row.school).join("、");
+    return {
+      title: `${band.title} ${fmt(last.score)}-${fmt(first.score)} 分`,
+      text: `${band.rows.length} 所，代表学校：${escapeHtml(sample)}。`,
+    };
+  });
+}
+
+function adviceSchoolPrompt(rows) {
+  if (state.juniorSchool.trim()) return "";
+  return `
+    <section class="table-section advice-section">
+      <div class="group-title">
+        <h3>名额到校建议</h3>
+        <span>需填初中</span>
+      </div>
+      <div class="advice-list">
+        <div class="empty inline">输入考生所在初中后，会按该初中的名额到校录取最低分数线给出冲、稳、保建议。</div>
+      </div>
+    </section>
+  `;
+}
+
+function adviceSchoolGroup(rows, buckets, target) {
+  if (!state.juniorSchool.trim()) return adviceSchoolPrompt(rows);
+  if (!rows.length) {
+    return `
+      <section class="table-section advice-section">
+        <div class="group-title">
+          <h3>名额到校建议</h3>
+          <span>0 所</span>
+        </div>
+        <div class="advice-list">
+          <div class="empty inline">当前初中没有匹配到名额到校录取最低分数线，可检查初中名称或切换参考年份。</div>
+        </div>
+      </section>
+    `;
+  }
+  return adviceGroup(
+    "名额到校建议",
+    `按“${escapeHtml(state.juniorSchool.trim())}”对应的名额到校录取最低分数线判断，主要看校内竞争。`,
+    buckets,
+    target,
+    "名额到校"
+  );
+}
+
+function adviceGroup(title, note, buckets, target, scoreLabel) {
+  return `
+    <section class="advice-group">
+      <div class="advice-group-title">
+        <h3>${title}</h3>
+        <p>${note}</p>
+      </div>
+      ${buckets.map((bucket) => adviceBucket(bucket, target, scoreLabel)).join("")}
+    </section>
+  `;
+}
+
+function adviceBucket(bucket, target, scoreLabel) {
   return `
     <section class="table-section advice-section">
       <div class="group-title">
@@ -668,11 +848,12 @@ function adviceBucket(bucket, target) {
         <span>${bucket.rows.length} 所</span>
       </div>
       <div class="advice-list">
+        <article class="advice-row advice-note"><span>${bucket.note}</span></article>
         ${
           bucket.rows.length
             ? bucket.rows.map((row) => {
                 const gap = round1(row.score - target);
-                return `<article class="advice-row"><strong>${escapeHtml(row.school)}</strong><span>平行 ${fmt(row.score)}，英语 ${fmt(row.english)}，差值 ${gap > 0 ? "+" : ""}${fmt(gap)}</span></article>`;
+                return `<article class="advice-row"><strong>${escapeHtml(row.school)}</strong><span>${scoreLabel} ${fmt(row.score)}，${gapText(gap)}</span></article>`;
               }).join("")
             : '<div class="empty inline">暂无匹配学校</div>'
         }
@@ -681,8 +862,8 @@ function adviceBucket(bucket, target) {
   `;
 }
 
-function findScore(path, school, year) {
-  const row = data[path].find((item) => item.district === state.district && item.school === school && item.year === year);
+function findScore(path, school, year, district = state.district) {
+  const row = data[path].find((item) => item.district === district && item.school === school && item.year === year);
   return row ? row.score : null;
 }
 
@@ -704,6 +885,11 @@ function pathLabel(path) {
 
 function round1(value) {
   return Math.round(value * 10) / 10;
+}
+
+function gapText(gap) {
+  if (gap === 0) return "与预估分相同";
+  return `比预估分 ${gap > 0 ? "高" : "低"} ${fmt(Math.abs(gap))}`;
 }
 
 function emptyHtml() {

@@ -79,6 +79,12 @@ h1 {
   line-height: 1.15;
 }
 
+.district-title {
+  color: var(--green);
+  font-size: 28px;
+  font-weight: 900;
+}
+
 .gate-copy {
   margin: 10px 0 18px;
   color: var(--muted);
@@ -174,7 +180,7 @@ input {
 main {
   width: min(760px, 100%);
   margin: 0 auto;
-  padding: 14px 14px 24px;
+  padding: 14px 14px calc(88px + env(safe-area-inset-bottom));
 }
 
 .view {
@@ -245,40 +251,114 @@ main {
   color: var(--blue);
 }
 
-.tabs {
-  position: sticky;
-  top: 76px;
-  z-index: 8;
-  display: flex;
-  gap: 8px;
-  margin: -2px -14px 0;
-  padding: 10px 14px;
-  overflow-x: auto;
-  background: rgba(245, 246, 242, 0.94);
-  backdrop-filter: blur(14px);
-  scrollbar-width: none;
+.rule-guide {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px rgba(37, 52, 42, 0.06);
 }
 
-.tabs::-webkit-scrollbar {
-  display: none;
+.rule-guide-head {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.rule-guide-head span {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.rule-guide-head h2 {
+  font-size: 19px;
+  line-height: 1.25;
+}
+
+.rule-guide-head p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rule-list {
+  display: grid;
+  gap: 8px;
+}
+
+.rule-item {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.rule-item strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.rule-item p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.tabs {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  width: min(760px, 100%);
+  padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  border-top: 1px solid rgba(221, 228, 218, 0.9);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -8px 24px rgba(37, 52, 42, 0.08);
+  backdrop-filter: blur(16px);
 }
 
 .tab {
-  flex: 0 0 auto;
-  min-height: 38px;
-  padding: 0 14px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink);
+  position: relative;
+  min-width: 0;
+  min-height: 46px;
+  padding: 12px 6px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
   white-space: nowrap;
 }
 
+.tab::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  width: 22px;
+  height: 3px;
+  border-radius: 999px;
+  background: transparent;
+  transform: translateX(-50%);
+}
+
 .tab.is-active {
-  border-color: var(--green);
+  color: var(--green);
+  background: linear-gradient(180deg, rgba(230, 243, 236, 0.95), rgba(255, 255, 255, 0));
+}
+
+.tab.is-active::before {
   background: var(--green);
-  color: #fff;
-  font-weight: 800;
 }
 
 .controls {
@@ -294,7 +374,7 @@ main {
 
 .search-box {
   display: grid;
-  grid-template-columns: 24px 1fr;
+  grid-template-columns: 1fr;
   align-items: center;
   min-height: 44px;
   padding: 0 12px;
@@ -466,15 +546,35 @@ h2 {
   table-layout: fixed;
 }
 
+.score-table .school-column {
+  width: 44%;
+}
+
+.score-table .total-column {
+  width: 10%;
+}
+
+.score-table .core-column {
+  width: 10%;
+}
+
+.score-table .subject-column {
+  width: 8%;
+}
+
+.score-table .test-column {
+  width: 12%;
+}
+
 .score-table.is-quota-school {
   font-size: 11px;
 }
 
 .score-table th,
 .score-table td {
-  padding: 10px 5px;
+  padding: 10px 3px;
   border-bottom: 1px solid #e8ede6;
-  text-align: right;
+  text-align: center;
   vertical-align: middle;
 }
 
@@ -489,37 +589,42 @@ h2 {
   border-bottom: 0;
 }
 
-.score-table .school-col,
-.score-table .junior-col {
-  text-align: left;
+.score-table .school-col {
+  text-align: center;
   line-height: 1.35;
   word-break: break-word;
 }
 
 .score-table .school-col {
-  width: 30%;
   color: var(--ink);
   font-size: 12px;
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
-.score-table .junior-col {
-  width: 20%;
+.score-table .school-col strong {
+  display: block;
+}
+
+.score-table .junior-under {
+  display: block;
+  margin-top: 5px;
   color: var(--muted);
   font-size: 10px;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .score-table .total-col {
-  width: 12%;
   color: var(--green);
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 900;
   white-space: nowrap;
 }
 
 .score-table .small-score {
   color: var(--ink);
-  font-size: 10px;
+  font-size: 8.5px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -538,11 +643,19 @@ h2 {
   table-layout: fixed;
 }
 
+.history-table .school-column {
+  width: 52%;
+}
+
+.history-table .year-score-column {
+  width: 16%;
+}
+
 .history-table th,
 .history-table td {
-  padding: 10px 6px;
+  padding: 10px 4px;
   border-bottom: 1px solid #e8ede6;
-  text-align: right;
+  text-align: center;
   vertical-align: middle;
 }
 
@@ -558,39 +671,20 @@ h2 {
 }
 
 .history-table .school-col {
-  width: 36%;
-  text-align: left;
+  text-align: center;
   color: var(--ink);
   font-size: 12px;
   font-weight: 900;
   line-height: 1.35;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .history-table .score-col {
   color: var(--green);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   white-space: nowrap;
-}
-
-.history-table .trend-col {
-  width: 18%;
-  font-size: 10px;
-  font-weight: 900;
-  line-height: 1.25;
-}
-
-.history-table .trend-col.good {
-  color: var(--green);
-}
-
-.history-table .trend-col.watch {
-  color: var(--blue);
-}
-
-.history-table .trend-col.care {
-  color: var(--gold);
 }
 
 .compare-table-section {
@@ -600,23 +694,38 @@ h2 {
 }
 
 .compare-table-wrap {
-  overflow-x: auto;
+  overflow-x: hidden;
   background: #fbfcfa;
 }
 
 .compare-table {
   width: 100%;
-  min-width: 520px;
   border-collapse: collapse;
   table-layout: fixed;
   font-size: 12px;
 }
 
+.compare-table .school-column {
+  width: 48%;
+}
+
+.compare-table .year-column {
+  width: 8%;
+}
+
+.compare-table .score-column {
+  width: 14.5%;
+}
+
+.compare-table .parallel-column {
+  width: 15%;
+}
+
 .compare-table th,
 .compare-table td {
-  padding: 9px 6px;
+  padding: 9px 3px;
   border-bottom: 1px solid #e8ede6;
-  text-align: right;
+  text-align: center;
   vertical-align: middle;
 }
 
@@ -632,7 +741,7 @@ h2 {
 }
 
 .compare-table tbody tr:nth-child(3n + 1) td {
-  border-top: 7px solid #f2f6f0;
+  border-top: 10px solid #dfe9df;
 }
 
 .compare-table tbody tr:first-child td {
@@ -640,10 +749,10 @@ h2 {
 }
 
 .compare-table .school-col {
-  width: 34%;
-  text-align: left;
+  text-align: center;
   line-height: 1.35;
   word-break: break-word;
+  overflow-wrap: anywhere;
   background: #f0f7f2;
   border-right: 1px solid #dce8dd;
 }
@@ -670,8 +779,7 @@ h2 {
 }
 
 .compare-table .year-cell {
-  width: 13%;
-  text-align: left;
+  text-align: center;
   color: var(--muted);
   font-weight: 900;
   white-space: nowrap;
@@ -688,7 +796,7 @@ h2 {
 }
 
 .compare-table .num strong {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .compare-card {
@@ -872,9 +980,10 @@ h2 {
 }
 
 .group-title {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 10px;
   padding: 11px 12px;
   border-bottom: 1px solid var(--line);
@@ -882,19 +991,49 @@ h2 {
 }
 
 .group-title h3 {
+  width: 100%;
+  padding: 0 46px;
+  text-align: center;
   font-size: 16px;
   line-height: 1.2;
 }
 
 .group-title span {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--muted);
   font-size: 12px;
+  white-space: nowrap;
 }
 
 .advice-list {
   display: grid;
   gap: 8px;
   padding: 10px;
+}
+
+.advice-group {
+  display: grid;
+  gap: 10px;
+}
+
+.advice-group-title {
+  display: grid;
+  gap: 4px;
+  padding: 2px 2px 0;
+}
+
+.advice-group-title h3 {
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.advice-group-title p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .advice-row {
@@ -913,6 +1052,10 @@ h2 {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.advice-note {
+  background: var(--green-soft);
 }
 
 .empty {
@@ -957,5 +1100,11 @@ h2 {
 
   .year-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 640px) {
+  .entry-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
