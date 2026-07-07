@@ -547,23 +547,23 @@ h2 {
 }
 
 .score-table .school-column {
-  width: 44%;
+  width: 30%;
 }
 
 .score-table .total-column {
-  width: 10%;
+  width: 12%;
 }
 
 .score-table .core-column {
-  width: 10%;
+  width: 12%;
 }
 
 .score-table .subject-column {
-  width: 8%;
+  width: 10%;
 }
 
 .score-table .test-column {
-  width: 12%;
+  width: 16%;
 }
 
 .score-table.is-quota-school {
@@ -644,11 +644,11 @@ h2 {
 }
 
 .history-table .school-column {
-  width: 52%;
+  width: 35%;
 }
 
 .history-table .year-score-column {
-  width: 16%;
+  width: 21.66%;
 }
 
 .history-table th,
@@ -706,19 +706,19 @@ h2 {
 }
 
 .compare-table .school-column {
-  width: 48%;
+  width: 35%;
 }
 
 .compare-table .year-column {
-  width: 8%;
+  width: 18%;
 }
 
 .compare-table .score-column {
-  width: 14.5%;
+  width: 15.66%;
 }
 
 .compare-table .parallel-column {
-  width: 15%;
+  width: 15.68%;
 }
 
 .compare-table th,

@@ -45,7 +45,8 @@ const PAGE_META = {
   },
 };
 
-const SCHOOL_TYPE_ORDER = ["委属高中", "市重点", "区重点", "普通高中", "民办高中", "国际高中", "国际/双语", "其他"];
+const SCHOOL_TYPE_ORDER = ["委属高中", "市重点", "区重点", "普通高中", "外区市重点", "民办高中", "国际/双语", "其他"];
+const PUBLIC_SCHOOL_TYPES = new Set(["市重点", "区重点", "普通高中"]);
 const ASCENDING_YEARS = [...data.summary.years].sort();
 
 const state = {
@@ -275,10 +276,11 @@ function renderPathList(path) {
 
 function scoreTable(path, rows, title) {
   const isQuotaSchool = path === "quotaSchool";
+  const displayTitle = title === "市重点" ? "本区市重点" : title;
   return `
     <section class="table-section score-table-section">
       <div class="group-title">
-        <h3>${escapeHtml(title)}</h3>
+        <h3>${escapeHtml(displayTitle)}</h3>
         <span>${rows.length} 条</span>
       </div>
       <div class="score-table-wrap">
@@ -561,9 +563,16 @@ function renderParallelHistory() {
     if (row.district !== state.district) return;
     if (state.query && !row.school.includes(state.query.trim())) return;
     if (!schools.has(row.school)) {
-      schools.set(row.school, { school: row.school, schoolType: row.schoolType || "其他", years: {}, sortScore: 0 });
+      schools.set(row.school, {
+        school: row.school,
+        schoolType: row.schoolType || "其他",
+        schoolDistrict: row.schoolDistrict || "",
+        years: {},
+        sortScore: 0,
+      });
     }
     const item = schools.get(row.school);
+    if (!item.schoolDistrict && row.schoolDistrict) item.schoolDistrict = row.schoolDistrict;
     item.years[row.year] = row;
     if (row.year === "2025") item.sortScore = row.score || 0;
   });
@@ -629,10 +638,23 @@ function trendLabel(values) {
 function groupBySchoolType(rows) {
   const groups = new Map(SCHOOL_TYPE_ORDER.map((type) => [type, []]));
   rows.forEach((row) => {
-    const type = SCHOOL_TYPE_ORDER.includes(row.schoolType) ? row.schoolType : "其他";
+    const type = displaySchoolType(row);
     groups.get(type).push(row);
   });
   return SCHOOL_TYPE_ORDER.map((type) => ({ type, rows: groups.get(type) })).filter((group) => group.rows.length);
+}
+
+function displaySchoolType(row) {
+  if (
+    row.schoolDistrict &&
+    row.schoolDistrict !== state.district &&
+    row.schoolType !== "委属高中" &&
+    PUBLIC_SCHOOL_TYPES.has(row.schoolType)
+  ) {
+    return "外区市重点";
+  }
+  if (row.schoolType === "国际高中") return "国际/双语";
+  return SCHOOL_TYPE_ORDER.includes(row.schoolType) ? row.schoolType : "其他";
 }
 
 function renderAdvice() {
