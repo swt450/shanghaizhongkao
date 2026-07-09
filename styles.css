@@ -1058,6 +1058,18 @@ h2 {
   background: var(--green-soft);
 }
 
+.advice-category {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  margin-top: 4px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.advice-category span {
+  white-space: nowrap;
+}
+
 .empty {
   padding: 26px 16px;
   border: 1px dashed var(--line);

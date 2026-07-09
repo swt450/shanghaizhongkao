@@ -45,8 +45,20 @@ const PAGE_META = {
   },
 };
 
-const SCHOOL_TYPE_ORDER = ["委属高中", "市重点", "区重点", "普通高中", "外区市重点", "民办高中", "国际/双语", "其他"];
-const PUBLIC_SCHOOL_TYPES = new Set(["市重点", "区重点", "普通高中"]);
+const SCHOOL_CATEGORY_ORDER = [
+  "委属市重点",
+  "本区公办市重点",
+  "本区公办特色高中",
+  "本区公办区重点",
+  "本区公办一般高中",
+  "外区公办市重点",
+  "外区公办特色高中",
+  "外区公办区重点",
+  "外区公办一般高中",
+  "民办区重点",
+  "民办一般高中",
+  "国际学校",
+];
 const ASCENDING_YEARS = [...data.summary.years].sort();
 
 const state = {
@@ -267,20 +279,19 @@ function baseMatches(row, options = {}) {
 function renderPathList(path) {
   const rows = data[path]
     .filter((row) => baseMatches(row, { junior: path === "quotaSchool" }))
-    .sort((a, b) => (b.score || 0) - (a.score || 0));
+    .sort(scoreRowCompare);
   els.resultCount.textContent = `${rows.length} 条`;
   els.resultList.innerHTML = rows.length
-    ? groupBySchoolType(rows).map((group) => scoreTable(path, group.rows, group.type)).join("")
+    ? scoreTable(path, rows)
     : emptyHtml();
 }
 
-function scoreTable(path, rows, title) {
+function scoreTable(path, rows) {
   const isQuotaSchool = path === "quotaSchool";
-  const displayTitle = title === "市重点" ? "本区市重点" : title;
   return `
     <section class="table-section score-table-section">
       <div class="group-title">
-        <h3>${escapeHtml(displayTitle)}</h3>
+        <h3>按录取最低分排序</h3>
         <span>${rows.length} 条</span>
       </div>
       <div class="score-table-wrap">
@@ -347,6 +358,7 @@ function buildCompareRows() {
         schools.set(row.school, {
           schoolType: current.schoolType || row.schoolType || "其他",
           schoolDistrict: current.schoolDistrict || row.schoolDistrict || "",
+          ownership: current.ownership || row.ownership || "",
         });
       }
     });
@@ -373,6 +385,7 @@ function buildCompareRows() {
         school,
         schoolType: meta.schoolType,
         schoolDistrict: meta.schoolDistrict,
+        ownership: meta.ownership,
         category,
         years,
         latest,
@@ -384,9 +397,7 @@ function buildCompareRows() {
 }
 
 function compareCategory(meta) {
-  if (meta.schoolType === "委属高中") return "委属高中";
-  if (meta.schoolType !== "市重点") return "";
-  return meta.schoolDistrict === state.district || !meta.schoolDistrict ? "本区市重点" : "外区市重点";
+  return schoolCategory(meta);
 }
 
 function compareParallelDistrict(meta) {
@@ -394,7 +405,7 @@ function compareParallelDistrict(meta) {
 }
 
 function groupCompareRows(rows) {
-  return ["委属高中", "本区市重点", "外区市重点"]
+  return SCHOOL_CATEGORY_ORDER
     .map((type) => ({ type, rows: rows.filter((row) => row.category === type) }))
     .filter((group) => group.rows.length);
 }
@@ -567,6 +578,7 @@ function renderParallelHistory() {
         school: row.school,
         schoolType: row.schoolType || "其他",
         schoolDistrict: row.schoolDistrict || "",
+        ownership: row.ownership || "",
         years: {},
         sortScore: 0,
       });
@@ -584,7 +596,7 @@ function renderParallelHistory() {
   });
   els.resultCount.textContent = `${rows.length} 所`;
   els.resultList.innerHTML = rows.length
-    ? groupBySchoolType(rows).map((group) => parallelHistoryTable(group.rows, group.type)).join("")
+    ? groupBySchoolCategory(rows).map((group) => parallelHistoryTable(group.rows, group.type)).join("")
     : emptyHtml();
 }
 
@@ -635,26 +647,28 @@ function trendLabel(values) {
   return { level: "blue", text: "整体平稳" };
 }
 
-function groupBySchoolType(rows) {
-  const groups = new Map(SCHOOL_TYPE_ORDER.map((type) => [type, []]));
-  rows.forEach((row) => {
-    const type = displaySchoolType(row);
-    groups.get(type).push(row);
-  });
-  return SCHOOL_TYPE_ORDER.map((type) => ({ type, rows: groups.get(type) })).filter((group) => group.rows.length);
+function groupBySchoolCategory(rows) {
+  return SCHOOL_CATEGORY_ORDER
+    .map((type) => ({
+      type,
+      rows: rows.filter((row) => schoolCategory(row) === type),
+    }))
+    .filter((group) => group.rows.length);
 }
 
-function displaySchoolType(row) {
-  if (
-    row.schoolDistrict &&
-    row.schoolDistrict !== state.district &&
-    row.schoolType !== "委属高中" &&
-    PUBLIC_SCHOOL_TYPES.has(row.schoolType)
-  ) {
-    return "外区市重点";
+function schoolCategory(row) {
+  if (row.schoolType === "委属市重点") return "委属市重点";
+  if (row.schoolType === "国际学校") return "国际学校";
+  if (row.ownership === "民办") {
+    return row.schoolType === "区重点" ? "民办区重点" : "民办一般高中";
   }
-  if (row.schoolType === "国际高中") return "国际/双语";
-  return SCHOOL_TYPE_ORDER.includes(row.schoolType) ? row.schoolType : "其他";
+  if (row.ownership !== "公办") return "";
+  const scope = row.schoolDistrict === state.district ? "本区" : "外区";
+  if (row.schoolType === "市重点") return `${scope}公办市重点`;
+  if (row.schoolType === "特色高中") return `${scope}公办特色高中`;
+  if (row.schoolType === "区重点") return `${scope}公办区重点`;
+  if (row.schoolType === "一般高中") return `${scope}公办一般高中`;
+  return "";
 }
 
 function renderAdvice() {
@@ -696,7 +710,7 @@ function quotaDistrictAdviceRows() {
     .filter((row) => row.district === state.district && row.year === state.year)
     .filter((row) => row.score !== null)
     .filter((row) => !state.query || row.school.includes(state.query.trim()))
-    .sort((a, b) => b.score - a.score || a.school.localeCompare(b.school, "zh-Hans-CN"));
+    .sort(scoreRowCompare);
 }
 
 function quotaSchoolAdviceRows() {
@@ -707,7 +721,7 @@ function quotaSchoolAdviceRows() {
     .filter((row) => row.score !== null)
     .filter((row) => String(row.juniorSchool || "").includes(junior))
     .filter((row) => !state.query || row.school.includes(state.query.trim()))
-    .sort((a, b) => b.score - a.score || a.school.localeCompare(b.school, "zh-Hans-CN"));
+    .sort(scoreRowCompare);
 }
 
 function parallelAdviceRows() {
@@ -715,7 +729,7 @@ function parallelAdviceRows() {
     .filter((row) => row.district === state.district && row.year === state.year)
     .filter((row) => row.score !== null)
     .filter((row) => !state.query || row.school.includes(state.query.trim()))
-    .sort((a, b) => b.score - a.score || a.school.localeCompare(b.school, "zh-Hans-CN"));
+    .sort(scoreRowCompare);
 }
 
 function adviceBuckets(rows, lineLabel, target) {
@@ -729,8 +743,7 @@ function adviceBuckets(rows, lineLabel, target) {
 function closestRows(rows, target) {
   return rows
     .slice()
-    .sort((a, b) => Math.abs(a.score - target) - Math.abs(b.score - target) || b.score - a.score || a.school.localeCompare(b.school, "zh-Hans-CN"))
-    .slice(0, 8);
+    .sort(scoreRowCompare);
 }
 
 function adviceSummary(rows, target) {
@@ -863,6 +876,7 @@ function adviceGroup(title, note, buckets, target, scoreLabel) {
 }
 
 function adviceBucket(bucket, target, scoreLabel) {
+  const groups = groupBySchoolCategory(bucket.rows);
   return `
     <section class="table-section advice-section">
       <div class="group-title">
@@ -872,11 +886,17 @@ function adviceBucket(bucket, target, scoreLabel) {
       <div class="advice-list">
         <article class="advice-row advice-note"><span>${bucket.note}</span></article>
         ${
-          bucket.rows.length
-            ? bucket.rows.map((row) => {
-                const gap = round1(row.score - target);
-                return `<article class="advice-row"><strong>${escapeHtml(row.school)}</strong><span>${scoreLabel} ${fmt(row.score)}，${gapText(gap)}</span></article>`;
-              }).join("")
+          groups.length
+            ? groups.map((group) => `
+                <article class="advice-row advice-category">
+                  <strong>${escapeHtml(group.type)}</strong>
+                  <span>${group.rows.length} 所</span>
+                </article>
+                ${group.rows.map((row) => {
+                  const gap = round1(row.score - target);
+                  return `<article class="advice-row"><strong>${escapeHtml(row.school)}</strong><span>${scoreLabel} ${fmt(row.score)}，${gapText(gap)}</span></article>`;
+                }).join("")}
+              `).join("")
             : '<div class="empty inline">暂无匹配学校</div>'
         }
       </div>
@@ -907,6 +927,18 @@ function pathLabel(path) {
 
 function round1(value) {
   return Math.round(value * 10) / 10;
+}
+
+function scoreRowCompare(a, b) {
+  return (
+    (b.score || 0) - (a.score || 0) ||
+    (b.core || 0) - (a.core || 0) ||
+    (b.math || 0) - (a.math || 0) ||
+    (b.chinese || 0) - (a.chinese || 0) ||
+    (b.comprehensive || 0) - (a.comprehensive || 0) ||
+    (b.english || 0) - (a.english || 0) ||
+    a.school.localeCompare(b.school, "zh-Hans-CN")
+  );
 }
 
 function gapText(gap) {
