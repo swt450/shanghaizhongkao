@@ -87,6 +87,7 @@ const els = {
   search: document.querySelector("#searchInput"),
   year: document.querySelector("#yearSelect"),
   yearField: document.querySelector("#yearSelect").closest("label"),
+  yearLabel: document.querySelector("#yearSelect").closest("label").querySelector("span"),
   score: document.querySelector("#scoreInput"),
   scoreField: document.querySelector("#scoreInput").closest("label"),
   scoreLabel: document.querySelector("#scoreInput").closest("label").querySelector("span"),
@@ -254,6 +255,7 @@ function renderPage() {
   els.pageIntro.classList.add("is-hidden");
   els.listTitle.textContent = meta.title;
   els.yearField.classList.toggle("is-hidden", ["compare", "parallelHistory"].includes(state.page));
+  els.yearLabel.textContent = state.page === "advice" ? "参考年份" : "年份";
   els.scoreField.classList.toggle("is-hidden", ["compare", "parallelHistory"].includes(state.page));
   els.scoreLabel.textContent = state.page === "advice" ? "预估分" : "最低分";
   els.score.placeholder = state.page === "advice" ? "输入分数" : "不限";
@@ -329,6 +331,7 @@ function scoreTableRow(row, isQuotaSchool) {
       <td class="school-col">
         <strong>${escapeHtml(row.school)}</strong>
         ${isQuotaSchool ? `<span class="junior-under">${escapeHtml(row.juniorSchool || "-")}</span>` : ""}
+        ${row.schoolStatus ? `<span class="junior-under">${escapeHtml(row.schoolStatus)}</span>` : ""}
       </td>
       <td class="total-col">${fmt(row.score)}</td>
       <td class="small-score">${fmt(row.core)}</td>
@@ -351,7 +354,7 @@ function renderCompare() {
 
 function buildCompareRows() {
   const schools = new Map();
-  for (const path of ["quotaDistrict", "quotaSchool", "parallel"]) {
+  for (const path of ["quotaDistrict", "quotaSchool"]) {
     data[path].forEach((row) => {
       if (row.district === state.district && (!state.query || row.school.includes(state.query.trim()))) {
         const current = schools.get(row.school) || {};
@@ -401,6 +404,7 @@ function compareCategory(meta) {
 }
 
 function compareParallelDistrict(meta) {
+  if (meta.schoolType === "委属市重点") return state.district;
   return meta.schoolDistrict && meta.schoolDistrict !== state.district ? meta.schoolDistrict : state.district;
 }
 
@@ -679,7 +683,6 @@ function renderAdvice() {
   if (target === null) {
     els.resultCount.textContent = `${districtRows.length + schoolRows.length + parallelRows.length} 所`;
     els.resultList.innerHTML = `
-      ${adviceOverview(districtRows)}
       <div class="empty">
         在“预估分”里输入分数，这里会按${escapeHtml(state.district)}名额到区、所在初中的名额到校和平行志愿录取线给出冲、稳、保建议。
       </div>
@@ -701,13 +704,13 @@ function renderAdvice() {
     ${adviceGroup("名额到区建议", "按考生所在区名额到区录取最低分数线判断，全区竞争。", districtBuckets, target, "名额到区")}
     ${adviceSchoolGroup(schoolRows, schoolBuckets, target)}
     ${adviceGroup("平行志愿建议", "按考生所在区1-15平行志愿录取最低分数线判断，用来拉开冲、稳、保梯度。", parallelBuckets, target, "平行志愿")}
-    ${adviceOverview(districtRows)}
   `;
 }
 
 function quotaDistrictAdviceRows() {
   return data.quotaDistrict
     .filter((row) => row.district === state.district && row.year === state.year)
+    .filter((row) => row.includeInAdvice !== false)
     .filter((row) => row.score !== null)
     .filter((row) => !state.query || row.school.includes(state.query.trim()))
     .sort(scoreRowCompare);
@@ -718,6 +721,7 @@ function quotaSchoolAdviceRows() {
   if (!junior) return [];
   return data.quotaSchool
     .filter((row) => row.district === state.district && row.year === state.year)
+    .filter((row) => row.includeInAdvice !== false)
     .filter((row) => row.score !== null)
     .filter((row) => String(row.juniorSchool || "").includes(junior))
     .filter((row) => !state.query || row.school.includes(state.query.trim()))
@@ -727,6 +731,7 @@ function quotaSchoolAdviceRows() {
 function parallelAdviceRows() {
   return data.parallel
     .filter((row) => row.district === state.district && row.year === state.year)
+    .filter((row) => row.includeInAdvice !== false)
     .filter((row) => row.score !== null)
     .filter((row) => !state.query || row.school.includes(state.query.trim()))
     .sort(scoreRowCompare);
@@ -787,41 +792,6 @@ function adviceSummary(rows, target) {
       </div>
     </section>
   `;
-}
-
-function adviceOverview(rows) {
-  const bands = buildScoreBands(rows);
-  if (!bands.length) return "";
-  return `
-    <section class="table-section advice-section">
-      <div class="group-title">
-        <h3>本区分数段参考</h3>
-        <span>${bands.length} 段</span>
-      </div>
-      <div class="advice-list">
-        ${bands.map((band) => `<article class="advice-row"><strong>${band.title}</strong><span>${band.text}</span></article>`).join("")}
-      </div>
-    </section>
-  `;
-}
-
-function buildScoreBands(rows) {
-  if (!rows.length) return [];
-  const bands = [
-    { title: "高分段", rows: rows.slice(0, Math.ceil(rows.length / 3)) },
-    { title: "中分段", rows: rows.slice(Math.ceil(rows.length / 3), Math.ceil((rows.length * 2) / 3)) },
-    { title: "稳妥段", rows: rows.slice(Math.ceil((rows.length * 2) / 3)) },
-  ].filter((band) => band.rows.length);
-
-  return bands.map((band) => {
-    const first = band.rows[0];
-    const last = band.rows[band.rows.length - 1];
-    const sample = band.rows.slice(0, 3).map((row) => row.school).join("、");
-    return {
-      title: `${band.title} ${fmt(last.score)}-${fmt(first.score)} 分`,
-      text: `${band.rows.length} 所，代表学校：${escapeHtml(sample)}。`,
-    };
-  });
 }
 
 function adviceSchoolPrompt(rows) {
