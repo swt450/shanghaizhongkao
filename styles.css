@@ -680,6 +680,10 @@ h2 {
   overflow-wrap: anywhere;
 }
 
+.history-table .school-col strong {
+  font: inherit;
+}
+
 .history-table .score-col {
   color: var(--green);
   font-size: 13px;
@@ -1082,15 +1086,6 @@ h2 {
 
 .empty.inline {
   padding: 14px;
-}
-
-.app-footer {
-  width: min(760px, 100%);
-  margin: 0 auto;
-  padding: 0 14px calc(18px + env(safe-area-inset-bottom));
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
 }
 
 @media (max-width: 430px) {
