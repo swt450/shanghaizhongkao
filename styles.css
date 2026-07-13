@@ -680,10 +680,6 @@ h2 {
   overflow-wrap: anywhere;
 }
 
-.history-table .school-col strong {
-  font: inherit;
-}
-
 .history-table .score-col {
   color: var(--green);
   font-size: 13px;

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>上海中考志愿分数速查</title>
+    <meta
+      name="description"
+      content="上海中考名额到区、名额到校、平行志愿历年录取最低分数查询与高中学校选择建议。"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="districtGate" class="district-gate">
+      <div class="gate-panel">
+        <p class="eyebrow">上海中考志愿</p>
+        <label class="select-field">
+          <span>选择考生所在区</span>
+          <select id="gateDistrictSelect">
+            <option value="">请选择</option>
+          </select>
+        </label>
+        <button id="enterButton" class="primary-button" type="button" disabled>进入查询</button>
+      </div>
+    </div>
+
+    <div id="appShell" class="app-shell is-hidden">
+      <header class="app-header">
+        <button id="backButton" class="icon-button" type="button" aria-label="返回">‹</button>
+        <div>
+          <p class="eyebrow" id="headerEyebrow">考生所在区</p>
+          <h1 id="headerTitle" class="district-title">-</h1>
+        </div>
+        <button id="changeDistrictButton" class="district-button" type="button">换区</button>
+      </header>
+
+      <main>
+        <section id="homeView" class="view is-active" aria-live="polite">
+          <section class="entry-grid" aria-label="功能入口">
+            <button class="entry-card" type="button" data-section="history">
+              <span>分数查询</span>
+              <strong>历年录取最低分数查询</strong>
+              <small>查名额到区、名额到校、平行志愿录取最低分数线</small>
+            </button>
+            <button class="entry-card accent" type="button" data-section="choice">
+              <span>择校建议</span>
+              <strong>高中学校选择建议</strong>
+              <small>名额分配、平行志愿、择校建议</small>
+            </button>
+          </section>
+
+          <section class="rule-guide" aria-label="上海中考志愿填报规则">
+            <div class="rule-guide-head">
+              <span>中考志愿规则</span>
+              <p>上海中考志愿填报通常在中考结束后、成绩公布前进行，录取按批次顺序依次进行。以下用于理解志愿顺序和录取最低分数线，具体以当年官方发布为准。</p>
+            </div>
+            <div class="rule-list">
+              <article class="rule-item">
+                <strong>1. 自主招生批次</strong>
+                <p>自主招生批次优先录取，包含高中自主招生、体艺专项、中职贯通等类型。若已被前面批次录取，后续批次一般不再录取。</p>
+              </article>
+              <article class="rule-item">
+                <strong>2. 名额分配综合评价批次</strong>
+                <p>这一批次包括名额分配到区和名额分配到校。名额分配录取需结合中考成绩和综合评价成绩；本工具展示的到区、到校录取最低分数线按考试分口径展示，不含综合素质评价50分。</p>
+              </article>
+              <article class="rule-item">
+                <strong>3. 名额分配到区</strong>
+                <p>通常填报1个志愿。先看目标高中在考生所在区是否有招生计划、计划数是多少，再参考历年录取最低分数线。</p>
+              </article>
+              <article class="rule-item">
+                <strong>4. 名额分配到校</strong>
+                <p>通常填报2个志愿。到校机会与考生所在初中相关，要看本初中是否有对应高中名额、计划数和校内竞争情况。</p>
+              </article>
+              <article class="rule-item">
+                <strong>5. 统一招生平行志愿</strong>
+                <p>平行志愿按“分数优先、遵循志愿、一轮投档”录取，可按冲、稳、保拉开梯度。志愿数量和填报规则以当年官方政策为准。</p>
+              </article>
+              <article class="rule-item">
+                <strong>6. 同分排序与分数口径</strong>
+                <p>平行志愿录取总分相同时，优先录取经公示享受同分优待的学生；再比较语数英合计成绩；仍同分时，依次比较数学、语文、综合测试成绩。表中的单科成绩是录取最低分同分排序参考，不是学校平均分。</p>
+              </article>
+            </div>
+          </section>
+        </section>
+
+        <section id="workView" class="view" aria-live="polite">
+          <section class="controls" aria-label="筛选">
+            <label class="search-box">
+              <input id="searchInput" type="search" placeholder="搜高中" autocomplete="off" />
+            </label>
+            <div class="filter-row">
+              <label>
+                <span>年份</span>
+                <select id="yearSelect"></select>
+              </label>
+              <label>
+                <span>最低分</span>
+                <input id="scoreInput" type="number" inputmode="decimal" placeholder="不限" />
+              </label>
+            </div>
+            <label id="juniorField" class="select-field is-hidden">
+              <span>所在初中</span>
+              <input id="juniorInput" type="search" list="juniorOptions" placeholder="输入初中关键词" autocomplete="off" />
+              <datalist id="juniorOptions"></datalist>
+            </label>
+          </section>
+
+          <div id="pageIntro" class="page-intro is-hidden"></div>
+          <div class="section-head">
+            <h2 id="listTitle">-</h2>
+            <span id="resultCount"></span>
+          </div>
+          <div id="resultList" class="card-list"></div>
+          <nav id="subTabs" class="tabs" aria-label="子页面"></nav>
+        </section>
+      </main>
+
+    </div>
+
+    <script src="./data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
