@@ -33,11 +33,11 @@ const PAGE_META = {
   },
   compare: {
     title: "各渠道录取最低分数线对比",
-    intro: "把同一所高中近三年的名额到区、名额到校、平行志愿录取最低分数线放在一起，先判断名额路径有没有机会。",
+    intro: "把同一所高中历年的名额到区、名额到校、平行志愿录取最低分数线放在一起，先判断名额路径有没有机会。",
   },
   parallelHistory: {
     title: "1-15平行志愿录取最低分数线对比",
-    intro: "如果名额路径优势不明显，再看1-15平行志愿近三年录取最低分数线走势，判断冲稳保梯度。",
+    intro: "如果名额路径优势不明显，再看1-15平行志愿历年录取最低分数线走势，判断冲稳保梯度。",
   },
   advice: {
     title: "择校建议",
@@ -60,13 +60,14 @@ const SCHOOL_CATEGORY_ORDER = [
   "国际学校",
 ];
 const ASCENDING_YEARS = [...data.summary.years].sort();
+const LATEST_YEAR = data.summary.years[0] || "";
 
 const state = {
   district: "",
   section: "home",
   page: "",
   query: "",
-  year: "2025",
+  year: LATEST_YEAR,
   minScore: "",
   juniorSchool: "",
 };
@@ -208,11 +209,11 @@ function openSection(section) {
 
 function resetFilters() {
   state.query = "";
-  state.year = "2025";
+  state.year = LATEST_YEAR;
   state.minScore = "";
   state.juniorSchool = "";
   els.search.value = "";
-  els.year.value = "2025";
+  els.year.value = LATEST_YEAR;
   els.score.value = "";
   els.junior.value = "";
 }
@@ -228,8 +229,8 @@ function renderTabs() {
   els.subTabs.querySelectorAll(".tab").forEach((button) => {
     button.addEventListener("click", () => {
       state.page = button.dataset.page;
-      state.year = state.page === "parallelHistory" || state.page === "compare" ? "all" : "2025";
-      els.year.value = state.year === "all" ? "2025" : state.year;
+      state.year = state.page === "parallelHistory" || state.page === "compare" ? "all" : LATEST_YEAR;
+      els.year.value = state.year === "all" ? LATEST_YEAR : state.year;
       renderTabs();
       renderPage();
     });
@@ -382,7 +383,7 @@ function buildCompareRows() {
           schoolDelta: schoolQuota !== null && parallel !== null ? round1(schoolQuota - parallel) : null,
         };
       }
-      const latest = years["2025"] || {};
+      const latest = years[LATEST_YEAR] || {};
       const category = compareCategory(meta);
       return {
         school,
@@ -460,7 +461,7 @@ function compareSchoolYearRow(item, year, showSchool) {
   const lower = values.delta !== null && values.delta < 0;
   const districtLabel = item.schoolDistrict || state.district;
   return `
-    <tr>
+    <tr class="${showSchool ? "school-group-start" : ""}">
       ${
         showSchool
           ? `<td class="school-col" rowspan="${data.summary.years.length}">
@@ -553,7 +554,7 @@ function compareJudgement(item) {
       level: "good",
       label: "名额优先看",
       title: "名额到区有连续优势",
-      text: "近三年里不止一年到区低于平行，适合先研究名额路径，再决定平行志愿梯度。",
+      text: "历年数据里不止一年到区低于平行，适合先研究名额路径，再决定平行志愿梯度。",
     };
   }
   if (bestGap !== null && bestGap < 0) {
@@ -590,12 +591,12 @@ function renderParallelHistory() {
     const item = schools.get(row.school);
     if (!item.schoolDistrict && row.schoolDistrict) item.schoolDistrict = row.schoolDistrict;
     item.years[row.year] = row;
-    if (row.year === "2025") item.sortScore = row.score || 0;
+    if (row.year === LATEST_YEAR) item.sortScore = row.score || 0;
   });
 
   const rows = Array.from(schools.values()).sort((a, b) => {
-    const aScore = a.sortScore || a.years["2024"]?.score || a.years["2023"]?.score || 0;
-    const bScore = b.sortScore || b.years["2024"]?.score || b.years["2023"]?.score || 0;
+    const aScore = a.sortScore || data.summary.years.map((year) => a.years[year]?.score).find((score) => score != null) || 0;
+    const bScore = b.sortScore || data.summary.years.map((year) => b.years[year]?.score).find((score) => score != null) || 0;
     return bScore - aScore || a.school.localeCompare(b.school, "zh-Hans-CN");
   });
   els.resultCount.textContent = `${rows.length} 所`;
@@ -615,9 +616,7 @@ function parallelHistoryTable(rows, title) {
         <table class="history-table">
           <colgroup>
             <col class="school-column" />
-            <col class="year-score-column" />
-            <col class="year-score-column" />
-            <col class="year-score-column" />
+            ${ASCENDING_YEARS.map(() => '<col class="year-score-column" />').join("")}
           </colgroup>
           <thead>
             <tr>
@@ -646,8 +645,8 @@ function trendLabel(values) {
   const newest = values[0];
   const oldest = values[values.length - 1];
   const delta = round1(newest - oldest);
-  if (delta >= 5) return { level: "watch", text: `三年升 ${fmt(delta)}` };
-  if (delta <= -5) return { level: "good", text: `三年降 ${fmt(Math.abs(delta))}` };
+  if (delta >= 5) return { level: "watch", text: `区间升 ${fmt(delta)}` };
+  if (delta <= -5) return { level: "good", text: `区间降 ${fmt(Math.abs(delta))}` };
   return { level: "blue", text: "整体平稳" };
 }
 
@@ -769,7 +768,7 @@ function adviceSummary(rows, target) {
     suggestion = "本区名额到区空间较大，可以优先看委属高中和本区、市重点高位学校，再保留少量稳妥梯度。";
   } else if (reachable.length >= Math.ceil(rows.length * 0.6)) {
     level = "中高位";
-    suggestion = "可选面比较宽，建议冲稳保都放，但重点比较学校热度和近三年波动。";
+    suggestion = "可选面比较宽，建议冲稳保都放，但重点比较学校热度和历年波动。";
   } else if (reachable.length >= Math.ceil(rows.length * 0.3)) {
     level = "中位";
     suggestion = "重点放在接近预估分和低 10 分以内的学校，冲刺学校控制在少数。";

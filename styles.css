@@ -648,7 +648,7 @@ h2 {
 }
 
 .history-table .year-score-column {
-  width: 21.66%;
+  width: auto;
 }
 
 .history-table th,
@@ -740,7 +740,7 @@ h2 {
   border-bottom: 0;
 }
 
-.compare-table tbody tr:nth-child(3n + 1) td {
+.compare-table tbody tr.school-group-start td {
   border-top: 10px solid #dfe9df;
 }
 
