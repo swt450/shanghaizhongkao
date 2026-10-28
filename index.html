@@ -8,19 +8,15 @@
       name="description"
       content="上海中考名额到区、名额到校、平行志愿历年录取最低分数查询与高中学校选择建议。"
     />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=691811caaca7" />
   </head>
   <body>
     <div id="districtGate" class="district-gate">
       <div class="gate-panel">
         <p class="eyebrow">上海中考志愿</p>
-        <label class="select-field">
-          <span>选择考生所在区</span>
-          <select id="gateDistrictSelect">
-            <option value="">请选择</option>
-          </select>
-        </label>
-        <button id="enterButton" class="primary-button" type="button" disabled>进入查询</button>
+        <h1>选择考生所在区</h1>
+        <p class="gate-copy">点击区名，直接进入该区的分数查询与择校分析。</p>
+        <div id="gateDistrictGrid" class="district-grid" aria-label="上海市各区"></div>
       </div>
     </div>
 
@@ -31,7 +27,22 @@
           <p class="eyebrow" id="headerEyebrow">考生所在区</p>
           <h1 id="headerTitle" class="district-title">-</h1>
         </div>
-        <button id="changeDistrictButton" class="district-button" type="button">换区</button>
+        <div class="header-actions">
+          <button id="changeDistrictButton" class="district-button" type="button">
+            <img src="./assets/icons/map-pin.svg" alt="" aria-hidden="true" />
+            <span>换区</span>
+          </button>
+          <button
+            id="exportImageButton"
+            class="export-image-button is-hidden"
+            type="button"
+            aria-label="将完整页面导出为图片"
+            title="将完整页面导出为图片"
+          >
+            <img src="./assets/icons/external-link.svg" alt="" aria-hidden="true" />
+            <span>导出图</span>
+          </button>
+        </div>
       </header>
 
       <main>
@@ -84,9 +95,11 @@
         </section>
 
         <section id="workView" class="view" aria-live="polite">
+          <nav id="detailTabs" class="detail-tabs is-hidden" aria-label="历年分数类型"></nav>
           <section class="controls" aria-label="筛选">
             <label class="search-box">
-              <input id="searchInput" type="search" placeholder="搜高中" autocomplete="off" />
+              <img class="field-icon" src="./assets/icons/search.svg" alt="" aria-hidden="true" />
+              <input id="searchInput" aria-label="搜索高中" type="search" placeholder="搜高中" autocomplete="off" />
             </label>
             <div class="filter-row">
               <label>
@@ -100,7 +113,8 @@
             </div>
             <label id="juniorField" class="select-field is-hidden">
               <span>所在初中</span>
-              <input id="juniorInput" type="search" list="juniorOptions" placeholder="输入初中关键词" autocomplete="off" />
+              <input id="juniorInput" aria-label="所在初中" type="search" list="juniorOptions" placeholder="输入初中关键词" autocomplete="off" />
+              <img class="field-chevron" src="./assets/icons/chevron-down.svg" alt="" aria-hidden="true" />
               <datalist id="juniorOptions"></datalist>
             </label>
           </section>
@@ -117,7 +131,7 @@
 
     </div>
 
-    <script src="./data.js"></script>
-    <script src="./app.js"></script>
+    <script src="./data.js?v=78e57d2e7b98"></script>
+    <script src="./app.js?v=c1c85536de4b"></script>
   </body>
 </html>
