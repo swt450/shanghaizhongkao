@@ -589,21 +589,23 @@ function pathRows(path) {
 
 function scoreTable(path, rows) {
   const isQuotaSchool = path === "quotaSchool";
-  const hasPlan = path !== "parallel";
+  const hasPlan = true;
+  const isParallel = path === "parallel";
   return `
     <section class="table-section score-table-section">
       <div class="group-title">
         <h3>按录取最低分排序</h3>
         <span>${rows.length} 条</span>
       </div>
-      <p class="score-data-note">英语由语数外合计减去语文、数学计算；名额分配总分不含综合评价50分。计划为“-”表示未取得或未匹配，不能视为0。</p>
+      <p class="score-data-note">${isParallel ? `${escapeHtml(state.year)}年计划按报考区与学校匹配；目前仅收录部分计划，含转载来源，仍在补充核验。计划为“—”表示未取得或未匹配，不能视为0。` : '英语由语数外合计减去语文、数学计算；名额分配总分不含综合评价50分。计划为“-”表示未取得或未匹配，不能视为0。'}</p>
       <p class="table-swipe-hint">左右滑动查看完整单科 →</p>
       <div class="score-table-wrap">
         <table class="score-table ${isQuotaSchool ? "is-quota-school" : ""} ${hasPlan ? "has-plan" : "no-plan"}">
           <colgroup>
             <col class="school-column" />
+            ${isParallel ? '<col class="plan-column" />' : ""}
             <col class="total-column" />
-            ${hasPlan ? '<col class="plan-column" />' : ""}
+            ${hasPlan && !isParallel ? '<col class="plan-column" />' : ""}
             <col class="core-column" />
             <col class="subject-column" />
             <col class="subject-column" />
@@ -613,8 +615,9 @@ function scoreTable(path, rows) {
           <thead>
             <tr>
               <th>学校</th>
+              ${isParallel ? '<th><strong>计划</strong><small>人数</small></th>' : ""}
               <th><strong>总分</strong><small>最低分</small></th>
-              ${hasPlan ? '<th><strong>计划</strong><small>人数</small></th>' : ""}
+              ${hasPlan && !isParallel ? '<th><strong>计划</strong><small>人数</small></th>' : ""}
               <th>语数外</th>
               <th>语文</th>
               <th>数学</th>
@@ -622,14 +625,14 @@ function scoreTable(path, rows) {
               <th>综合测试</th>
             </tr>
           </thead>
-          <tbody>${rows.map((row, index) => scoreTableRow(row, isQuotaSchool, hasPlan, index)).join("")}</tbody>
+          <tbody>${rows.map((row, index) => scoreTableRow(row, isQuotaSchool, hasPlan, index, isParallel)).join("")}</tbody>
         </table>
       </div>
     </section>
   `;
 }
 
-function scoreTableRow(row, isQuotaSchool, hasPlan, index) {
+function scoreTableRow(row, isQuotaSchool, hasPlan, index, isParallel) {
   return `
     <tr>
       <td class="school-col">
@@ -638,8 +641,9 @@ function scoreTableRow(row, isQuotaSchool, hasPlan, index) {
         ${isQuotaSchool && state.juniorSchool.trim() ? `<span class="junior-under">${escapeHtml(row.juniorSchool || "-")}</span>` : ""}
         ${row.schoolStatus ? `<span class="junior-under">${escapeHtml(row.schoolStatus)}</span>` : ""}
       </td>
+      ${isParallel ? `<td class="plan-col" title="${escapeHtml(row.planSourceType ? `${row.year}年 · ${row.planSourceType} · ${row.planCoverage}` : "未取得或未匹配计划")}">${row.planCount == null ? "—" : fmt(row.planCount)}</td>` : ""}
       <td class="total-col">${fmt(row.score)}</td>
-      ${hasPlan ? `<td class="plan-col">${fmt(row.planCount)}</td>` : ""}
+      ${hasPlan && !isParallel ? `<td class="plan-col">${fmt(row.planCount)}</td>` : ""}
       <td class="small-score">${fmt(row.core)}</td>
       <td class="small-score">${fmt(row.chinese)}</td>
       <td class="small-score">${fmt(row.math)}</td>
